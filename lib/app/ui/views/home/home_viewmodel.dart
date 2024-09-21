@@ -1,11 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:stacked/stacked.dart';
 import 'package:task_crud_app/app/model/data_model.dart';
 import 'package:task_crud_app/app/ui/views/add_item/add_item_view.dart';
@@ -48,49 +47,58 @@ class HomeViewModel extends BaseViewModel {
   }
 
   void exportDatabase() async {
-    try {
-      // Get the directory path for saving the file
-      final directory = await getApplicationDocumentsDirectory();
-      final filePath = '${directory.path}/data_dump.json';
+    // Get the data from the Hive box
+    final dataItems = Hive.box("itemData");
+    final data = dataItems.get("itemData");
 
-      // Get all data from Hive
-      final dataItems = Hive.box("itemData");
-      final items = (dataItems.get("itemData") as List<String>)
-          .map((el) => Data.fromMap(jsonDecode(el)))
-          .toList();
+    // Check if data exists
+    if (data != null) {
+      // Convert the data to a JSON string
+      final jsonData = jsonEncode(data);
 
-      // Create a map to store all data
-      final dataMap = {
-        "items": items.map((el) => el.toMap()).toList(),
-      };
+      // Request permission to access external storage
+      final status = await Permission.storage.request();
 
-      // Encode the data to JSON
-      final jsonData = jsonEncode(dataMap);
+      if (status.isGranted) {
+        // Get the directory path using FilePicker
+        final directory = await FilePicker.platform.getDirectoryPath();
 
-      // Write the data to a file
-      final file = File(filePath);
-      await file.writeAsString(jsonData);
+        if (directory != null) {
+          // Create a file in the selected directory
+          final file = File('$directory/exported_data.json');
 
-      // Open the file picker to select the download location
-      final filePicker = FilePicker.platform;
-      final filePathSelected = await filePicker.saveFile(
-        type: FileType.any,
-        allowedExtensions: ['json'],
-      );
+          // Write the JSON data to the file
+          await file.writeAsString(jsonData);
 
-      if (filePathSelected != null) {
-        // Copy the file to the selected location
-        final fileToCopy = File(filePath);
-        final fileCopied = await fileToCopy.copy(filePathSelected);
-        Get.snackbar(
-            "Export", "Data exported successfully to ${fileCopied.path}",
-            backgroundColor: Colors.green, colorText: Colors.white);
+          Get.snackbar(
+            "Export",
+            "Database exported successfully to $directory/exported_data.json",
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+          );
+        } else {
+          Get.snackbar(
+            "Export",
+            "Failed to get directory path",
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
+        }
       } else {
-        Get.snackbar("Export", "Data export cancelled",
-            backgroundColor: Colors.red, colorText: Colors.white);
+        Get.snackbar(
+          "Export",
+          "Permission denied to access external storage",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
       }
-    } catch (e) {
-      print(e);
+    } else {
+      Get.snackbar(
+        "Export",
+        "No data to export",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
 }
