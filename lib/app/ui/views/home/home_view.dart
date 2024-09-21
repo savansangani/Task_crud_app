@@ -25,11 +25,15 @@ class HomeView extends StackedView<HomeViewModel> {
   ) {
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-            onPressed: viewModel.exportDatabase,
-            icon: const Icon(
-              Icons.save,
-            )),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 10),
+          child: IconButton(
+              onPressed: viewModel.exportDatabase,
+              icon: const Icon(
+                Icons.save_alt_rounded,
+                size: 30,
+              )),
+        ),
         title: Text(
           "List Of Items",
           style: Theme.of(context).textTheme.titleLarge?.copyWith(

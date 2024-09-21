@@ -38,7 +38,12 @@ class HomeViewModel extends BaseViewModel {
     await dataItems.put(
         "itemData", items.map((el) => jsonEncode(el.toMap())).toList());
 
-    Get.snackbar("", "Iteam Delete Succesfully", backgroundColor: Colors.red);
+    Get.snackbar(
+      "Delete",
+      "Item Delete Succesfully",
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+    );
     notifyListeners();
   }
 
